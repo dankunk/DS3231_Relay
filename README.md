@@ -46,4 +46,25 @@ After setting the ds3231, it can be unplugged and keep time if connected to a co
 
 Now you can query the ds3231 with an arudino or any other compatible board! Check the Arduino-sketch folder for examples.
 
-	
+# Using the RTC and an Arduino to Trigger a IoT relay from DigitalLoggers (or a similar device):
+
+## 1. Flash your arduino with the "check_ds3231_trigger-relay"
+### It can be found in the Arduino sketches directory
+
+## 2. Update the Schedule in the sketch
+```{ hour, minute, second, GPIO pin that is being triggered, GPIO state, triggered already today?}```
+// ——— your schedule ———
+// Note: all fired flags start false
+Event events[] = {
+  {  0,  0,  0,  8, LOW,  false },   // at 00:00:00 → pin8 LOW
+  {  8,  0,  0,  8, HIGH, false },   // at 08:00:00 → pin8 HIGH
+  // …add more if you like…
+};
+
+## 3. Upload the sketch and plug in all the wires!
+### It's that easy!
+
+GPIO pin 8 should be plugged into the (+) slot on the relay. 
+The (-) slot on the relay should be plugged into a GND pin on the Arduino.
+
+

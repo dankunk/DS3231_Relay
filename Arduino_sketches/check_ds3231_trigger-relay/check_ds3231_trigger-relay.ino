@@ -13,6 +13,7 @@ struct Event {
 // ——— your schedule ———
 // Note: all fired flags start false
 Event events[] = {
+  // { hh, mm, ss, pin, logic, triggered already? }
   {  0,  0,  0,  8, LOW,  false },   // at 00:00:00 → pin8 LOW
   {  8,  0,  0,  8, HIGH, false },   // at 08:00:00 → pin8 HIGH
   // …add more if you like…
