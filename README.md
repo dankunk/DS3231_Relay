@@ -1,8 +1,10 @@
 # Setting and reading the DS3231 RTC to UTC with Circuit Python
 
-## 1. Flash the pico W board with the circuit python UF2 file found at the circuit python website. 
+## 1. Flash the pico W board with the circuit python UF2 file 
+It can be found at the circuit python website. 
 
-## 2. Add these neccessary libraries to the Pico W. They can be found online at adafruit.com or the circuit python website.
+## 2. Add these neccessary libraries to the Pico W. 
+They can be found online at adafruit.com or the circuit python website.
 	A. adafruit_ntp
 	B. adafruit_ds3231
 	C. adafruit_register
@@ -12,7 +14,9 @@
 	
 Note: The A, B, and C libraries can be found in the included lib/ directory in the PicoW_Set-ds3231/ github directory. Just copy over the files to the lib/ directory on your board.
 
-## 3. Make sure that the code.py file in the PicoW_Set-ds3231/ directory is uploaded to the root directory of your board. 
+## 3. Upload the code.py file to the root of the board.
+
+This can be found in the PicoW_Set-ds3231/ directory in this repo.
 
 Note: The code.py file will automatically run everytime your board recieves power.
 
