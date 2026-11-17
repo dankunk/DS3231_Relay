@@ -1,76 +1,89 @@
-# Setting and reading the DS3231 RTC to UTC with Circuit Python
+# DS3231 relay timer: precise grow-light control without Wi-Fi
 
-## 1. Flash the pico W board with the circuit python UF2 file 
-- It can be found at the circuit python website. 
+An Arduino switches a Digital Loggers IoT Relay on a daily schedule, using a DS3231 real-time clock (RTC) wired to it. To set the clock, plug a laptop into the Arduino's USB port and run one script. No Wi-Fi is needed on campus, and nothing has to be unplugged or carried home.
 
-## 2. Add these neccessary libraries to the Pico W. 
-- They can be found online at adafruit.com or the circuit python website.
+- **Daylight saving is automatic.** The RTC holds UTC and the Arduino converts it to Mountain Time (MST/MDT). No March/November visits.
+- **The sync is accurate to a few milliseconds.** The script uses internet time and measures and cancels out the USB delay.
+- **The coin cell is tracked.** Each sync reports whether the RTC lost power, how fast it's drifting, and how old the battery is.
 
-#### A. adafruit_ntp
-#### B. adafruit_ds3231
-#### C. adafruit_register
-	
-- Most of the other needed libraries should come installed in your circuit python build that you flashed in the previous step. If not, they can be added to the lib folder as needed. Use google and an AI companion if you get stuck!
-	
-Note: The A, B, and C libraries can be found in the included lib/ directory in the PicoW_Set-ds3231/ github directory. Just copy over the files to the lib/ directory on your board.
+![How the system works](wiring_diagrams/images/system_overview.svg)
 
-## 3. Upload the code.py file to the root of the board.
+## Full guides with wiring diagrams
 
-- This can be found in the PicoW_Set-ds3231/ directory in this repo.
+**→ [wiring_diagrams/](wiring_diagrams/README.md)**: start here for a first build.
 
-Note: The code.py file will automatically run everytime your board recieves power.
+1. [Set up and flash the Arduino](wiring_diagrams/01_arduino_setup.md)
+2. [Wiring: Arduino, DS3231 and IoT Relay](wiring_diagrams/02_wiring.md)
+3. [Sync the clock from a laptop](wiring_diagrams/03_sync_clock_from_laptop.md)
+4. [Daylight saving time: how it works](wiring_diagrams/04_daylight_saving_time.md)
+5. [RTC battery & yearly maintenance](wiring_diagrams/05_battery_and_maintenance.md)
+6. [Troubleshooting](wiring_diagrams/06_troubleshooting.md)
 
-- So each time you plug in your board with the ds3231 attached it will be reset to UTC time after connecting to the wifi.
+## What's in this repo
 
-## 4. Add a secrets.py file to your boards root directory
-#### In this file you should include your wifi name and password.
-	SSID = "My_Wifi_Network_Name"
-	PASSWORD = "password"
+| Path | What it is |
+|------|-----------|
+| [`Arduino_sketches/ds3231_trigger_relay/`](Arduino_sketches/ds3231_trigger_relay) | The Arduino sketch: light schedule in local time, automatic DST, fail-safe, and USB clock-sync commands |
+| [`laptop_sync/sync_rtc.py`](laptop_sync/sync_rtc.py) | Laptop script that sets the clock over USB and reports RTC/battery health |
+| [`laptop_sync/sync_rtc.bat`](laptop_sync/sync_rtc.bat) | Windows double-click launcher for the script |
+| [`wiring_diagrams/`](wiring_diagrams/README.md) | Step-by-step guides, wiring diagrams, photos |
 
-- Note: 5ghz connections won't connect. Use the 2.5ghz connection!
+## Quick start (if you've done this before)
 
-## 5. Wire the DS3231 into the Pi Pico. 
+### 1. Arduino
 
-- Breadboards, jumper wires, directly soldering all work. Just get it connected. 
+Edit the schedule at the top of `ds3231_trigger_relay.ino` (times are normal **local wall-clock** time) and upload it. It needs the **RTClib by Adafruit** library.
 
-- Note: This script manually addresses pins 17 (clock) and 16 (data) but these can be updated as needed. 
-
-		Power → DS3231 VCC → 3V3 (not 3V3_EN), GND → any Pico GND
-
-		I²C → SDA → GP16 (or STEMMA SDA), SCL → GP17 (or STEMMA SCL)
-
-		Plug in the backup battery on the DS3231 module (so it keeps time even when unconnected)
-
-## 6. Now everything is ready to go! 
-- After setting the ds3231, it can be unplugged and keep time if connected to a coin cell battery. 
-
-- Now you can query the ds3231 with an arudino or any other compatible board! Check the Arduino-sketch folder for examples.
-
-# Using the RTC and an Arduino to Trigger a IoT relay from DigitalLoggers (or a similar device):
-
-## 1. Flash your arduino with the "check_ds3231_trigger-relay"
-#### Note: It can be found in the Arduino sketches directory in this repo
-
-## 2. Update the Schedule in the sketch
-
-- Update this code with your schedule of interest!
-```// ——— your schedule ———
-// Note: all fired flags start false
+```cpp
 Event events[] = {
-  {  0,  0,  0,  8, LOW,  false },   // at 00:00:00 → pin8 LOW
-  {  8,  0,  0,  8, HIGH, false },   // at 08:00:00 → pin8 HIGH
-  // …add more if you like…
+  // { hour, minute, second, GPIO pin, state }
+  {  0,  0,  0,  8, LOW  },   // at 00:00:00 → pin 8 LOW  (lights off)
+  {  8,  0,  0,  8, HIGH },   // at 08:00:00 → pin 8 HIGH (lights on)
 };
 ```
 
-- This is what everything means in the curly brackets:
-```{ hour, minute, second, GPIO pin that is being triggered, GPIO state, triggered already today?}```
+`HIGH` = relay on, `LOW` = relay off. Events can be in any order and overnight schedules work.
 
+### 2. Wiring
 
-## 3. Upload the sketch and plug in all the wires!
-### It's that easy!
+**DS3231 VCC→5V (3.3V for ZS-042 modules), GND→GND, SDA→A4, SCL→A5. Pin 8→relay +, GND→relay −.** Plug the lights into a **Normally OFF** outlet. [Diagram](wiring_diagrams/02_wiring.md).
 
-- GPIO pin 8 should be plugged into the (+) slot on the relay. 
-The (-) slot on the relay should be plugged into a GND pin on the Arduino.
+### 3. Set the clock (first install, then about once a year)
 
+Close the Arduino Serial Monitor, plug in a laptop, and run:
 
+```bash
+py -m pip install pyserial
+```
+
+```bash
+py laptop_sync/sync_rtc.py
+```
+
+On Windows you can just double-click `laptop_sync/sync_rtc.bat`. Add `--battery-replaced` after swapping the coin cell, or use `--check` to only report.
+
+### 4. Check
+
+The Arduino's **L** LED gives a short blink every 2 s when running normally. **Fast blinking** means the clock isn't set or the RTC lost power: run the sync script.
+
+### Time-zone settings
+
+Already set for Colorado, at the top of the sketch:
+
+```cpp
+const int8_t STD_OFFSET_HOURS = -7;   // MST
+const bool   OBSERVE_DST      = true; // switches to MDT (-6) automatically
+```
+
+## Upgrading from the old Pico W version
+
+The Pico W is no longer needed; its code is in this repo's git history. An RTC set by the old Pico script holds local time, so wire it to the Arduino, upload the new sketch, and run `sync_rtc.py` once. Until you do, the lights will switch 6–7 hours off. [Details](wiring_diagrams/04_daylight_saving_time.md#migrating-from-the-old-pico-w--local-time-setup-one-time-only).
+
+## Battery: the short version
+
+- The CR2032 only runs the clock during power cuts.
+- `sync_rtc.py` tells you when to replace it: if the RTC lost power since the last sync, or the cell is ~3 years old.
+- Blue **ZS-042** modules have a charging circuit that can damage a CR2032 at 5 V. [Read the warning](wiring_diagrams/05_battery_and_maintenance.md#zs-042-charging-circuit-warning).
+
+### 
+NOTE: This codebase was refactored using Claude Opus 5.5 (high). 
