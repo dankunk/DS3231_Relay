@@ -1,1 +1,3 @@
-# Be sure to hide any secrets.py files...
+# Python
+__pycache__/
+*.pyc

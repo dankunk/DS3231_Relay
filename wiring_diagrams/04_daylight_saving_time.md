@@ -1,76 +1,63 @@
-# 4. Daylight saving time: how it works
+# 4. Daylight Saving Time
 
-**Short version:** you no longer touch anything for DST. The DS3231 holds UTC all year, and the Arduino works out whether it's MST or MDT on its own.
+**Summary:** You don't need to do anything for daylight saving time. The DS3231 keeps UTC all year, and the Arduino works out whether standard or daylight time applies.
 
-[← Back to guides](README.md) · [← 3. Laptop sync](03_sync_clock_from_laptop.md)
+[← Guides](README.md) · [← 3. Clock sync](03_sync_clock_from_laptop.md)
 
 ---
 
 ## Why the RTC stores UTC
 
-Previously the RTC held *local* time (UTC−6), so every March and November someone had to re-set it or edit code.
+An RTC set to local time has to be reset at every daylight saving change. UTC never shifts for daylight saving, so the timer stores UTC and calculates local time from it:
 
-Now:
+| Component | Role |
+|-----------|------|
+| **Laptop** (`sync_rtc.py`) | Writes **UTC** to the DS3231 |
+| **DS3231** | Counts seconds in UTC all year |
+| **Arduino** | Reads UTC, decides whether DST is in effect, and applies the offset: −7 h (MST) or −6 h (MDT) by default. The schedule is compared against the resulting local time. |
 
-| Device | Does what |
-|--------|-----------|
-| **Laptop** (`sync_rtc.py`) | Writes **UTC** to the DS3231. UTC never jumps for daylight saving. |
-| **DS3231** | Just counts seconds in UTC, all year round. |
-| **Arduino** | Reads UTC, decides if DST is in effect, and adds **−7 h** (MST) or **−6 h** (MDT). The schedule is compared against that local time. |
+The sketch calculates the DST rule instead of storing a table of dates, so it keeps working in future years without changes.
 
-Because the DST rule is calculated, not stored, the same sketch works in 2027, 2030 and so on without changes.
+## The DST rule (US, since 2007)
 
-## The rule the Arduino uses (US, since 2007)
+- **DST starts** on the **second Sunday in March** at 02:00 local standard time. Clocks move forward to 03:00.
+- **DST ends** on the **first Sunday in November** at 02:00 local daylight time. Clocks move back to 01:00.
 
-- **DST starts** on the **2nd Sunday of March** at **2:00 am** local standard time. The clocks jump to 3:00 am.
-- **DST ends** on the **1st Sunday of November** at **2:00 am** local daylight time. The clocks fall back to 1:00 am.
+| Year | DST starts | DST ends |
+|------|------------|----------|
+| 2027 | Sun 14 March | Sun 7 November |
+| 2028 | Sun 12 March | Sun 5 November |
+| 2029 | Sun 11 March | Sun 4 November |
+| 2030 | Sun 10 March | Sun 3 November |
+| 2031 | Sun 9 March | Sun 2 November |
 
-Upcoming changes for Colorado:
+The calculation (`isDST()` in [`ds3231_trigger_relay.ino`](../Arduino_sketches/ds3231_trigger_relay/ds3231_trigger_relay.ino)) has been checked against the published US DST transitions for every year from 2007 to 2099, down to the second of each switch. After each sync, `sync_rtc.py` also prints the local time the Arduino calculated and compares its UTC offset with the laptop's time zone. This gives an independent check on the real hardware.
 
-| Year | DST starts (spring forward) | DST ends (fall back) |
-|------|-----------------------------|----------------------|
-| 2027 | Sun March 14 | Sun November 7 |
-| 2028 | Sun March 12 | Sun November 5 |
-| 2029 | Sun March 11 | Sun November 4 |
-| 2030 | Sun March 10 | Sun November 3 |
-| 2031 | Sun March 9  | Sun November 2 |
+## Schedule behavior on transition days
 
-The calculation (`isDST()` in [`ds3231_trigger_relay.ino`](../Arduino_sketches/ds3231_trigger_relay/ds3231_trigger_relay.ino)) was checked against the real US DST dates for every year from 2007 to 2099, including the exact second of each switch. After each sync the laptop script also prints the local time the Arduino computed and compares its UTC offset with the laptop's own time zone. That gives an independent check on real hardware.
+Every second, the sketch sets the relay to match the most recent scheduled event before the current time. It doesn't wait for an exact time to pass. As a result:
 
-## What happens to the schedule on change days
+- **Spring forward:** an event scheduled between 02:00 and 02:59, a time that doesn't exist that night, takes effect at 03:00.
+- **Fall back:** the hour from 01:00 to 01:59 occurs twice. The relay state is the same both times, so nothing flickers.
+- Events at all other times are unaffected. The lights follow the wall clock.
 
-The sketch decides the relay state from "what's the most recent event before *now*?" every second, instead of waiting for an exact time to tick past. So:
+## Changing the time zone or disabling DST
 
-- **Spring forward:** an event scheduled between 2:00 and 2:59 am (a time that doesn't exist that night) still takes effect at 3:00 am.
-- **Fall back:** the 1:00–1:59 am hour happens twice. The relay state is the same both times, so nothing flickers.
-- Events at other times are unaffected. The lights simply follow the wall clock.
-
-## Moving to another time zone, or turning DST off
-
-Edit the two settings at the top of the sketch and re-upload. The RTC doesn't need re-syncing, because it's still UTC.
+Edit the two settings at the top of the sketch and upload it again. You don't need to re-sync the RTC, because it still holds UTC.
 
 | Location | `STD_OFFSET_HOURS` | `OBSERVE_DST` |
-|----------|-------------------|---------------|
-| Colorado / Mountain | `-7` | `true` |
+|----------|--------------------|---------------|
+| US Mountain | `-7` | `true` |
 | Arizona (no DST) | `-7` | `false` |
-| Pacific | `-8` | `true` |
-| Central | `-6` | `true` |
-| Eastern | `-5` | `true` |
-| Keep everything in UTC | `0` | `false` |
+| US Pacific | `-8` | `true` |
+| US Central | `-6` | `true` |
+| US Eastern | `-5` | `true` |
+| UTC (no conversion) | `0` | `false` |
 
-> The DST rule is the **US** rule. Other countries switch on different dates, so `isDST()` would need changing.
+> The built-in rule is the **US** daylight saving rule. Other regions change on different dates, so you would need to modify `isDST()`.
 
-> If DST is ever made permanent, set `OBSERVE_DST = false` and `STD_OFFSET_HOURS` to the new permanent offset (−6 for Colorado), then re-upload.
-
-## Migrating from the old Pico W / local-time setup (one time only)
-
-An RTC set with the old Pico W script holds **local** time. With the new sketch it would be **6–7 hours off** until it's re-synced.
-
-1. Wire the DS3231 to the Arduino ([guide 2](02_wiring.md)) and upload the new sketch ([guide 1](01_arduino_setup.md)).
-2. Run `sync_rtc.py` ([guide 3](03_sync_clock_from_laptop.md)). It will note that the RTC was holding local time; that's expected.
-
-The Pico W is no longer needed. Its code is still in this repo's git history if you ever want it.
+> If daylight saving time is made permanent, set `OBSERVE_DST = false` and set `STD_OFFSET_HOURS` to the new year-round offset (for example, −6 for US Mountain). Then upload the sketch again.
 
 ---
 
-**Next:** [5. RTC battery & yearly maintenance →](05_battery_and_maintenance.md)
+**Next:** [5. Battery and maintenance →](05_battery_and_maintenance.md)

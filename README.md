@@ -1,56 +1,96 @@
-# DS3231 relay timer: precise grow-light control without Wi-Fi
+# DS3231 Relay Timer
 
-An Arduino switches a Digital Loggers IoT Relay on a daily schedule, using a DS3231 real-time clock (RTC) wired to it. To set the clock, plug a laptop into the Arduino's USB port and run one script. No Wi-Fi is needed on campus, and nothing has to be unplugged or carried home.
+A standalone grow-light timer. An Arduino reads a DS3231 real-time clock (RTC) and switches a Digital Loggers IoT Relay on a daily schedule. It needs no Wi-Fi or network connection. To set the clock, you connect a laptop to the Arduino over USB and run one script.
 
-- **Daylight saving is automatic.** The RTC holds UTC and the Arduino converts it to Mountain Time (MST/MDT). No March/November visits.
-- **The sync is accurate to a few milliseconds.** The script uses internet time and measures and cancels out the USB delay.
-- **The coin cell is tracked.** Each sync reports whether the RTC lost power, how fast it's drifting, and how old the battery is.
+<p align="center">
+  <img src="wiring_diagrams/photos/Full_lid_on.jpg" alt="Assembled timer: Digital Loggers IoT Relay and Arduino in a 3D-printed mount" width="420">
+</p>
+
+## Features
+
+- **Runs offline.** The schedule runs from the DS3231 clock, so the timer keeps working without Wi-Fi or internet access.
+- **Handles daylight saving time automatically.** The RTC stores UTC, and the Arduino converts it to local time using the US daylight saving rules. You never need to adjust it in March or November.
+- **Sets the clock to within milliseconds.** The laptop script gets the time from an internet time server (NTP), then measures and cancels out the USB delay.
+- **Recovers from power cuts.** After a power cut the relay goes straight back to the scheduled state. If the clock can't be trusted, the relay is held in a configurable fail-safe state.
+- **Reports clock and battery health.** Each sync reports the RTC's drift, whether it lost power, and how old the backup coin cell is.
 
 ![How the system works](wiring_diagrams/images/system_overview.svg)
 
-## Full guides with wiring diagrams
+## Hardware
 
-**→ [wiring_diagrams/](wiring_diagrams/README.md)**: start here for a first build.
+| Component | Role |
+|-----------|------|
+| Arduino Uno R3 (or compatible) | Runs the schedule and takes clock syncs over USB |
+| Adafruit DS3231 Precision RTC (STEMMA QT) with a CR1220 coin cell | Keeps accurate time, including during power cuts |
+| Digital Loggers IoT Relay | Switches mains power to the grow light |
+| 5 V USB power adapter and USB cable | Powers the Arduino from the relay's **Always ON** outlet |
+| Grow light | Plugs into a **Normally OFF** outlet on the relay |
+| 3D-printed mount (optional) | Holds the relay and the Arduino together. See [`enclosure/`](enclosure/README.md). |
 
-1. [Set up and flash the Arduino](wiring_diagrams/01_arduino_setup.md)
-2. [Wiring: Arduino, DS3231 and IoT Relay](wiring_diagrams/02_wiring.md)
-3. [Sync the clock from a laptop](wiring_diagrams/03_sync_clock_from_laptop.md)
-4. [Daylight saving time: how it works](wiring_diagrams/04_daylight_saving_time.md)
-5. [RTC battery & yearly maintenance](wiring_diagrams/05_battery_and_maintenance.md)
+The relay's **Always ON** outlet powers the Arduino through the USB adapter. The grow light plugs into a **Normally OFF** outlet, so it turns on when Arduino pin 8 goes `HIGH`. The whole system runs from a single wall socket.
+
+<p align="center">
+  <img src="wiring_diagrams/photos/Full_lid_off.jpg" alt="Relay with the USB adapter in the Always ON outlet, the grow light in a Normally OFF outlet, and the Arduino wired to the control terminal" width="420">
+</p>
+
+## Documentation
+
+The full build and operation guide is in [`wiring_diagrams/`](wiring_diagrams/README.md):
+
+1. [Arduino setup](wiring_diagrams/01_arduino_setup.md): install the libraries, set the schedule, upload the sketch
+2. [Wiring](wiring_diagrams/02_wiring.md): DS3231, IoT Relay, outlets and power
+3. [Clock sync](wiring_diagrams/03_sync_clock_from_laptop.md): set the RTC from a laptop
+4. [Daylight saving time](wiring_diagrams/04_daylight_saving_time.md): how time zones and DST are handled
+5. [Battery and maintenance](wiring_diagrams/05_battery_and_maintenance.md): coin-cell care and the yearly checklist
 6. [Troubleshooting](wiring_diagrams/06_troubleshooting.md)
 
-## What's in this repo
+## Repository layout
 
-| Path | What it is |
-|------|-----------|
-| [`Arduino_sketches/ds3231_trigger_relay/`](Arduino_sketches/ds3231_trigger_relay) | The Arduino sketch: light schedule in local time, automatic DST, fail-safe, and USB clock-sync commands |
-| [`laptop_sync/sync_rtc.py`](laptop_sync/sync_rtc.py) | Laptop script that sets the clock over USB and reports RTC/battery health |
-| [`laptop_sync/sync_rtc.bat`](laptop_sync/sync_rtc.bat) | Windows double-click launcher for the script |
-| [`wiring_diagrams/`](wiring_diagrams/README.md) | Step-by-step guides, wiring diagrams, photos |
+| Path | Contents |
+|------|----------|
+| [`Arduino_sketches/ds3231_trigger_relay/`](Arduino_sketches/ds3231_trigger_relay) | Arduino sketch: the schedule, time-zone and DST handling, fail-safe, serial commands |
+| [`laptop_sync/`](laptop_sync) | `sync_rtc.py` clock-sync script, a Windows launcher (`sync_rtc.bat`), and `requirements.txt` |
+| [`wiring_diagrams/`](wiring_diagrams/README.md) | Guides, wiring diagrams, and photos of the reference build |
+| [`enclosure/`](enclosure/README.md) | 3D-printable mount for the relay and the Arduino |
 
-## Quick start (if you've done this before)
+## Quick start
 
-### 1. Arduino
+### 1. Configure and upload the sketch
 
-Edit the schedule at the top of `ds3231_trigger_relay.ino` (times are normal **local wall-clock** time) and upload it. It needs the **RTClib by Adafruit** library.
+Install **RTClib by Adafruit** from the Arduino Library Manager. Then edit the schedule at the top of `ds3231_trigger_relay.ino`. Times are local wall-clock time.
 
 ```cpp
 Event events[] = {
   // { hour, minute, second, GPIO pin, state }
-  {  0,  0,  0,  8, LOW  },   // at 00:00:00 → pin 8 LOW  (lights off)
-  {  8,  0,  0,  8, HIGH },   // at 08:00:00 → pin 8 HIGH (lights on)
+  {  0,  0,  0,  8, LOW  },   // 00:00:00 → pin 8 LOW  (lights off)
+  {  8,  0,  0,  8, HIGH },   // 08:00:00 → pin 8 HIGH (lights on)
 };
 ```
 
-`HIGH` = relay on, `LOW` = relay off. Events can be in any order and overnight schedules work.
+`HIGH` turns the relay on and `LOW` turns it off. Events can be listed in any order, and schedules that run past midnight work.
 
-### 2. Wiring
+The default time zone is US Mountain Time:
 
-**DS3231 VCC→5V (3.3V for ZS-042 modules), GND→GND, SDA→A4, SCL→A5. Pin 8→relay +, GND→relay −.** Plug the lights into a **Normally OFF** outlet. [Diagram](wiring_diagrams/02_wiring.md).
+```cpp
+const int8_t STD_OFFSET_HOURS = -7;   // standard-time offset from UTC
+const bool   OBSERVE_DST      = true; // apply US daylight saving rules
+```
 
-### 3. Set the clock (first install, then about once a year)
+### 2. Wire it
 
-Close the Arduino Serial Monitor, plug in a laptop, and run:
+| From | To |
+|------|----|
+| DS3231 VIN / GND / SDA / SCL | Arduino 5V / GND / A4 (SDA) / A5 (SCL) |
+| Arduino pin 8 | IoT Relay control **+** |
+| Arduino GND | IoT Relay control **−** |
+| USB power adapter | IoT Relay **Always ON** outlet |
+| Grow light | IoT Relay **Normally OFF** outlet |
+
+For diagrams and photos, see the [wiring guide](wiring_diagrams/02_wiring.md).
+
+### 3. Set the clock
+
+Do this when you first install the timer, and about once a year after that. Close the Arduino Serial Monitor, move the Arduino's USB cable from the power adapter to a laptop, and run:
 
 ```bash
 py -m pip install pyserial
@@ -60,30 +100,15 @@ py -m pip install pyserial
 py laptop_sync/sync_rtc.py
 ```
 
-On Windows you can just double-click `laptop_sync/sync_rtc.bat`. Add `--battery-replaced` after swapping the coin cell, or use `--check` to only report.
+On Windows you can double-click `laptop_sync/sync_rtc.bat` instead. When the sync finishes, plug the cable back into the power adapter.
 
-### 4. Check
+### 4. Check the status LED
 
-The Arduino's **L** LED gives a short blink every 2 s when running normally. **Fast blinking** means the clock isn't set or the RTC lost power: run the sync script.
+| Arduino **L** LED | Meaning |
+|-------------------|---------|
+| Short blink every 2 s | Running normally |
+| Fast blinking | The clock isn't set, or the RTC lost power. Run the sync script. |
 
-### Time-zone settings
+## Acknowledgements
 
-Already set for Colorado, at the top of the sketch:
-
-```cpp
-const int8_t STD_OFFSET_HOURS = -7;   // MST
-const bool   OBSERVE_DST      = true; // switches to MDT (-6) automatically
-```
-
-## Upgrading from the old Pico W version
-
-The Pico W is no longer needed; its code is in this repo's git history. An RTC set by the old Pico script holds local time, so wire it to the Arduino, upload the new sketch, and run `sync_rtc.py` once. Until you do, the lights will switch 6–7 hours off. [Details](wiring_diagrams/04_daylight_saving_time.md#migrating-from-the-old-pico-w--local-time-setup-one-time-only).
-
-## Battery: the short version
-
-- The CR2032 only runs the clock during power cuts.
-- `sync_rtc.py` tells you when to replace it: if the RTC lost power since the last sync, or the cell is ~3 years old.
-- Blue **ZS-042** modules have a charging circuit that can damage a CR2032 at 5 V. [Read the warning](wiring_diagrams/05_battery_and_maintenance.md#zs-042-charging-circuit-warning).
-
-### 
-NOTE: This codebase was refactored using Claude Opus 5.5 (high). 
+This codebase was refactored with the help of Claude Opus 5.5.

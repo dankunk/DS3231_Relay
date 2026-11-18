@@ -1,49 +1,50 @@
 # 6. Troubleshooting
 
-[← Back to guides](README.md)
+[← Guides](README.md)
 
 ---
 
-## Arduino L LED
+## Status LED (Arduino **L** LED)
 
-| LED | Meaning | Fix |
-|-----|---------|-----|
-| Short blink every 2 s | Running normally | — |
-| Fast blink | Clock never set, RTC lost power (dead coin cell during an outage), or RTC unplugged. Relay held in `FAILSAFE_STATE` | Check wiring, then run `sync_rtc.py` (add `--battery-replaced` if you swapped the cell) |
-| Off or solid | Sketch not running | Re-upload the sketch |
+| LED | Meaning | Action |
+|-----|---------|--------|
+| Short blink every 2 s | Running normally | None |
+| Fast blink | The clock was never set, the RTC lost power, or the RTC isn't responding. The relay is held in `FAILSAFE_STATE`. | Check the DS3231 wiring, then run `sync_rtc.py`. Add `--battery-replaced` if you replaced the cell. |
+| Off or solid | The sketch isn't running | Check the Arduino's power, then upload the sketch again |
 
-## Laptop sync script
+## Sync script messages
 
-| Message | Likely cause | Fix |
-|---------|--------------|-----|
-| `pyserial package is missing` | Library not installed | `py -m pip install pyserial` |
-| `'py' is not recognized` | Python not installed, or not on PATH | Install from python.org with **"Add python.exe to PATH"** ticked. Try `python` instead of `py` |
-| `No Arduino found` | Cable unplugged, charge-only cable, or unusual USB chip | Try another cable; run with `--list-ports` and pass `--port COMx` |
-| `More than one Arduino-like port found` | Several boards plugged in | Pass `--port COMx` |
-| `Serial port problem … Access is denied` | Arduino IDE Serial Monitor (or another program) has the port open | Close it and run again |
-| `The Arduino isn't answering` | Old sketch on the board, or wrong port | Upload the current `ds3231_trigger_relay` sketch ([guide 1](01_arduino_setup.md)) |
-| `Arduino says: RTC not found` | DS3231 wiring | Check VCC, GND, SDA→A4, SCL→A5 |
-| `Could not reach an internet time server` | No internet, or the network blocks NTP (UDP 123) | It falls back to the laptop clock. Sync the laptop's clock in Windows settings first, or try a phone hotspot |
-| `RTC seconds aren't ticking: oscillator stopped` | RTC lost all power | Setting the clock restarts it; replace the coin cell |
-| `about -6 h: the RTC was holding LOCAL time` | First sync after moving from the old Pico method | Expected once, nothing to do |
-| `This computer is on UTC-5…` | Laptop's time zone isn't Mountain | Fine if you're travelling; otherwise check `STD_OFFSET_HOURS` in the sketch |
+| Message | Likely cause | Resolution |
+|---------|--------------|------------|
+| `pyserial package is missing` | The library isn't installed | `py -m pip install pyserial` |
+| `'py' is not recognized` | Python isn't installed or isn't on PATH | Install Python from python.org with **Add python.exe to PATH** selected, or try `python` instead of `py` |
+| `No Arduino found` | The cable is unplugged, the cable is charge-only, or the board uses an unusual USB chip | Try a different cable. Run with `--list-ports` and pass `--port COMx`. |
+| `More than one Arduino-like port found` | Several boards are connected | Pass `--port COMx` |
+| `Serial port problem … Access is denied` | Another program has the port open, such as the Arduino IDE Serial Monitor | Close that program and run the script again |
+| `The Arduino isn't answering` | The board is running a different sketch, or you selected the wrong port | Upload `ds3231_trigger_relay` ([guide 1](01_arduino_setup.md)) |
+| `Arduino says: RTC not found` | DS3231 wiring problem | Check VIN, GND, SDA → A4 and SCL → A5 |
+| `Could not reach an internet time server` | No internet connection, or the network blocks NTP (UDP port 123) | The script uses the laptop's clock instead. Sync the system clock first, or use a different network. |
+| `RTC seconds aren't ticking: oscillator stopped` | The RTC lost all power | Setting the clock restarts the oscillator. Replace the coin cell. |
+| `the RTC was holding LOCAL time` | The RTC was previously set to local time by other software | Expected on the first sync. The sync stores UTC from then on. |
+| `This computer is on UTC-5…` | The laptop's time zone differs from the sketch's | This is fine when traveling. Otherwise, check `STD_OFFSET_HOURS` in the sketch. |
 
 ## Lights
 
-| Symptom | Likely cause | Fix |
-|---------|--------------|-----|
-| Wrong by **exactly 6 or 7 h** | RTC still holds local time from the old Pico script | Run `sync_rtc.py` |
-| Wrong by **exactly 1 h** | `STD_OFFSET_HOURS` / `OBSERVE_DST` wrong | Should be `-7` and `true` for Colorado |
-| Wrong by a few minutes | Normal drift after a long time | Run `sync_rtc.py` |
-| Never switch, but serial shows `-> pin 8 HIGH` | Lights in the wrong outlet, or relay wires loose/backwards | Use a **Normally OFF** outlet; pin 8 → **+**, GND → **−** |
-| Inverted (on when they should be off) | Lights in the **Normally ON** outlet | Move them to **Normally OFF** |
-| Blink off briefly when the laptop connects | The Uno restarts when the serial port opens | Normal; sync during lights-off ([details](03_sync_clock_from_laptop.md#will-syncing-blink-the-lights)) |
+| Symptom | Likely cause | Resolution |
+|---------|--------------|------------|
+| Off by **several whole hours** | The RTC holds local time instead of UTC | Run `sync_rtc.py` |
+| Off by **exactly 1 hour** | `STD_OFFSET_HOURS` or `OBSERVE_DST` is wrong for your location | See [Changing the time zone](04_daylight_saving_time.md#changing-the-time-zone-or-disabling-dst) |
+| Off by a few minutes | Normal drift over a long period | Run `sync_rtc.py` |
+| Never switch, but the serial log shows `-> pin 8 HIGH` | The light is in the wrong outlet, or the control wires are loose or reversed | Use a **Normally OFF** outlet. Connect pin 8 to **+** and GND to **−**. |
+| Inverted (on when they should be off) | The light is in the **Normally ON** outlet | Move it to a **Normally OFF** outlet |
+| Arduino resets when the lights switch | The Arduino is powered from a switched outlet | Plug the Arduino's power adapter into the **Always ON** outlet |
+| Lights go off briefly during a sync | The Arduino restarts when its USB cable is moved or the serial port opens | Expected. Sync during the lights-off period ([details](03_sync_clock_from_laptop.md#does-syncing-interrupt-the-lights)). |
 
 ## Arduino IDE
 
-| Symptom | Fix |
-|---------|-----|
-| Serial Monitor shows garbage | Set it to **57600** baud |
-| Typed commands do nothing | Set the line ending to **New Line** |
-| Upload fails / port missing | Check **Tools → Board/Port**; close the sync script or any other serial program |
-| `RTClib.h: No such file` | Install **RTClib by Adafruit** in the Library Manager |
+| Symptom | Resolution |
+|---------|------------|
+| The Serial Monitor shows unreadable characters | Set the baud rate to **57600** |
+| Typed commands have no effect | Set the line ending to **New Line** |
+| Upload fails, or the port is missing | Check **Tools → Board** and **Tools → Port**. Close the sync script and any other program using the serial port. |
+| `RTClib.h: No such file` | Install **RTClib by Adafruit** from the Library Manager |

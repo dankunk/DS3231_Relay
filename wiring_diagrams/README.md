@@ -1,51 +1,57 @@
-# Wiring & setup guides
+# Build and Operation Guide
 
-Step-by-step guides for building, syncing and maintaining the DS3231 relay timer.
+These guides cover how to build, configure, sync and maintain the DS3231 Relay Timer.
 
 ![How the system works](images/system_overview.svg)
 
-**In short:** the DS3231 clock is wired permanently to the Arduino on campus. About once a year you plug in a laptop and run `sync_rtc.py`. It sets the clock to **UTC** from internet time, compensating for the USB delay, and reports battery health. The Arduino converts UTC to Mountain Time and handles daylight saving itself, so there are no March/November visits.
+## How it works
 
-## Guides (do them in order the first time)
+The DS3231 real-time clock is wired permanently to the Arduino and keeps time in **UTC**. The Arduino converts UTC to local time, applies daylight saving time, and switches the IoT Relay to match the schedule. About once a year, you connect a laptop over USB and run `sync_rtc.py`. The script sets the RTC from internet time, cancels out the USB delay, and reports the clock's drift and battery health.
 
-| # | Guide | What it covers |
-|---|-------|----------------|
-| 1 | [Set up and flash the Arduino](01_arduino_setup.md) | Arduino IDE + RTClib, editing the schedule, uploading, serial commands |
-| 2 | [Wiring](02_wiring.md) | DS3231 + IoT Relay pin by pin, which outlet, powering the Arduino |
-| 3 | [Sync the clock from a laptop](03_sync_clock_from_laptop.md) | Python setup, running `sync_rtc.py`, reading the report, how the USB delay is cancelled |
-| 4 | [Daylight saving time: how it works](04_daylight_saving_time.md) | Why the RTC holds UTC, the DST rules, changing time zones, migrating from the old Pico W method |
-| 5 | [RTC battery & yearly maintenance](05_battery_and_maintenance.md) | When to replace the CR2032, the ZS-042 charging-circuit warning, yearly checklist |
-| 6 | [Troubleshooting](06_troubleshooting.md) | LED codes, script errors, lights at the wrong time |
+## Guides
 
-## Diagrams
+Work through the guides in order for a first build.
+
+| # | Guide | Covers |
+|---|-------|--------|
+| 1 | [Arduino setup](01_arduino_setup.md) | Arduino IDE and RTClib, the schedule, uploading, serial commands |
+| 2 | [Wiring](02_wiring.md) | DS3231 and IoT Relay connections, outlet assignment, powering the Arduino |
+| 3 | [Clock sync](03_sync_clock_from_laptop.md) | Python setup, running `sync_rtc.py`, reading the report, how the USB delay is cancelled |
+| 4 | [Daylight saving time](04_daylight_saving_time.md) | Why the RTC stores UTC, the DST rule, changing time zones |
+| 5 | [Battery and maintenance](05_battery_and_maintenance.md) | When to replace the coin cell, other DS3231 modules, the yearly checklist |
+| 6 | [Troubleshooting](06_troubleshooting.md) | LED codes, script errors, lights switching at the wrong time |
+
+## Diagrams and photos
 
 | Diagram | File |
 |---------|------|
 | System overview | [images/system_overview.svg](images/system_overview.svg) |
-| Arduino Uno → DS3231 + IoT Relay | [images/arduino_ds3231_relay.svg](images/arduino_ds3231_relay.svg) |
+| Wiring: Arduino Uno, DS3231 and IoT Relay | [images/arduino_ds3231_relay.svg](images/arduino_ds3231_relay.svg) |
 
-Photos of the real build go in [photos/](photos/README.md). That page lists which shots to take.
+For photos of the reference build, see [photos/](photos/README.md).
 
-## Parts list
+## Bill of materials
 
 | Part | Notes |
 |------|-------|
-| Arduino Uno (or Nano, Mega, Uno R4…) | Runs the schedule and accepts clock syncs over USB |
-| DS3231 RTC module | Blue "ZS-042" boards or the Adafruit DS3231 breakout both work |
-| CR2032 coin cell | Keeps the clock running through power cuts. Read [guide 5](05_battery_and_maintenance.md) first if you have a ZS-042 board. |
-| Digital Loggers IoT Relay | Switches the lights |
-| Jumper wires | 4 for the DS3231, 2 for the relay |
-| Power for the Arduino | 9 V barrel-jack adapter (recommended: keeps USB free) or a 5 V USB adapter |
-| USB-A to USB-B cable + any laptop with Python 3 | For syncing the clock |
+| Arduino Uno R3 (or compatible) | Nano, Mega and Uno R4 also work. See the [I²C pin notes](02_wiring.md#ds3231-to-arduino). |
+| Adafruit DS3231 Precision RTC (STEMMA QT) | Runs on 3–5 V and has no charging circuit. [Other DS3231 modules](05_battery_and_maintenance.md#using-a-different-ds3231-module) also work. |
+| CR1220 coin cell | Keeps the RTC running during power cuts |
+| STEMMA QT / Qwiic to male-header cable | Connects the RTC to the Arduino headers. Four jumper wires also work. |
+| Digital Loggers IoT Relay | Switches the grow light |
+| 2 jumper wires | Connect Arduino pin 8 and GND to the relay's control terminal |
+| 5 V USB power adapter and USB cable | Powers the Arduino from the relay's **Always ON** outlet |
+| Laptop with Python 3 | Used for clock syncs. Any OS works. |
+| 3D-printed mount (optional) | See [`enclosure/`](../enclosure/README.md) |
 
-## Quick reference: pin connections
+## Pin reference
 
 | Arduino Uno pin | Connects to | Wire color in diagram |
-|-----------------|-------------|---------------|
-| 5V (or 3.3V for ZS-042 modules) | DS3231 VCC | red |
+|-----------------|-------------|-----------------------|
+| 5V | DS3231 VIN | red |
 | GND | DS3231 GND | black |
-| A4 (or the SDA pin by AREF) | DS3231 SDA | blue |
-| A5 (or the SCL pin by AREF) | DS3231 SCL | yellow |
-| Digital pin 8 | IoT Relay **+** | purple |
-| GND | IoT Relay **−** | black |
-| USB port | Laptop, when syncing | — |
+| A4 (or the SDA pin next to AREF) | DS3231 SDA | blue |
+| A5 (or the SCL pin next to AREF) | DS3231 SCL | yellow |
+| Digital pin 8 | IoT Relay control **+** | purple |
+| GND | IoT Relay control **−** | black |
+| USB port | USB power adapter, or a laptop during a sync | gray |

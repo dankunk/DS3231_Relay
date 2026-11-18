@@ -38,7 +38,7 @@ except ImportError:  # pragma: no cover
 
 BAUD = 57600
 BYTE_TIME = 10.0 / BAUD          # seconds to send one byte over the Arduino's UART
-BATTERY_LIFE_YEARS = 3           # recommended CR2032 replacement interval
+BATTERY_LIFE_YEARS = 3           # recommended coin-cell replacement interval
 DRIFT_WARN_PPM = 5.0             # a healthy DS3231 is within about +/-2 ppm
 NTP_SERVERS = ["time.google.com", "time.cloudflare.com", "pool.ntp.org", "time.nist.gov", "time.windows.com"]
 NTP_EPOCH = 2208988800           # seconds from 1900-01-01 to 1970-01-01
@@ -320,7 +320,7 @@ def run(args, ser=None):
             print(f"RTC error:       {fmt_err(err_before)}")
             whole_h = round(err_before / 3600)
             if whole_h and abs(err_before - whole_h * 3600) < 120:
-                print(f"[--] That's about {whole_h:+d} h: the RTC was holding LOCAL time (old Pico method).")
+                print(f"[--] That's about {whole_h:+d} h: the RTC was holding LOCAL time instead of UTC.")
                 print("     Expected once. From now on it holds UTC and the Arduino handles DST.")
             elif last_sync:
                 days = (now - last_sync) / 86400

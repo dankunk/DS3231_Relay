@@ -1,66 +1,102 @@
-# 2. Wiring: Arduino, DS3231 and IoT Relay
+# 2. Wiring
 
-The DS3231 stays wired to the Arduino permanently. Nothing needs to be unplugged to set the clock.
+The DS3231 stays wired to the Arduino permanently, so you don't need to disconnect anything to set the clock.
 
-[← Back to guides](README.md) · [← 1. Arduino setup](01_arduino_setup.md)
+[← Guides](README.md) · [← 1. Arduino setup](01_arduino_setup.md)
 
 ---
 
-![Arduino Uno, DS3231 and IoT Relay wiring](images/arduino_ds3231_relay.svg)
+![Wiring diagram: Arduino Uno, DS3231 and Digital Loggers IoT Relay](images/arduino_ds3231_relay.svg)
 
-## DS3231 → Arduino
+<p align="center">
+  <img src="photos/Wiring.jpg" alt="Reference build: DS3231 lifted out to show the four RTC wires and the two relay control wires" width="480">
+  <br><em>Reference build, with the DS3231 lifted out to show the wiring.</em>
+</p>
 
-| DS3231 pin | Arduino Uno pin | Color in diagram |
-|-----------|-----------------|---------|
-| **VCC** | **5V** (or **3.3V**, see the battery note below) | red |
+## DS3231 to Arduino
+
+The reference build uses the **Adafruit DS3231 Precision RTC (STEMMA QT)** board, connected with a STEMMA QT / Qwiic to male-header cable. The cable's wire colors follow the STEMMA QT standard.
+
+| DS3231 pin | Arduino Uno pin | STEMMA QT wire color |
+|------------|-----------------|----------------------|
+| **VIN** | **5V** | red |
 | **GND** | **GND** | black |
-| **SDA** | **A4** (or the pin labelled **SDA** next to AREF) | blue |
-| **SCL** | **A5** (or the pin labelled **SCL** next to AREF) | yellow |
+| **SDA** | **A4**, or the **SDA** pin next to AREF | blue |
+| **SCL** | **A5**, or the **SCL** pin next to AREF | yellow |
 
-Leave **SQW** and **32K** unconnected. Pin order differs between DS3231 modules, so match each wire to the **label printed on your module**.
+The SDA/SCL pins next to AREF carry the same signals as A4/A5, so you can use either pair. Leave **BAT**, **32K**, **SQW** and **RST** unconnected. Pin order differs between DS3231 modules, so match each wire to the label printed on the board.
 
-> **Battery note:** blue **ZS-042** modules have a charging circuit that slowly damages a normal CR2032 when powered from 5 V. Either power the module from the Uno's **3.3V** pin, or remove the charging resistor. See [guide 5](05_battery_and_maintenance.md#zs-042-charging-circuit-warning).
+<p align="center">
+  <img src="photos/ds3231_front.jpg" alt="Adafruit DS3231 STEMMA QT board, front: pin labels and STEMMA QT connectors" width="300">
+  &nbsp;
+  <img src="photos/ds3231_back.jpg" alt="Adafruit DS3231 STEMMA QT board, back: CR1220 coin-cell holder" width="300">
+  <br><em>Adafruit DS3231 STEMMA QT: pin labels on the front, CR1220 holder on the back.</em>
+</p>
 
-> **Not using an Uno?** The I²C pins move: Nano / Pro Mini → A4 (SDA), A5 (SCL). Mega → 20 (SDA), 21 (SCL). Leonardo / Micro → 2 (SDA), 3 (SCL). Uno R4 → A4/A5 or the SDA/SCL header pins. Most boards also print `SDA`/`SCL` on the header.
+> **Other DS3231 modules:** Blue **ZS-042** boards have a battery-charging circuit that can damage a non-rechargeable coin cell at 5 V. Read [Using a different DS3231 module](05_battery_and_maintenance.md#using-a-different-ds3231-module) before you use one.
 
-## Arduino → Digital Loggers IoT Relay
+> **Other Arduino boards:** The I²C pins differ between boards.
+>
+> | Board | SDA | SCL |
+> |-------|-----|-----|
+> | Nano, Pro Mini | A4 | A5 |
+> | Mega | 20 | 21 |
+> | Leonardo, Micro | 2 | 3 |
+> | Uno R4 | A4, or the SDA header pin | A5, or the SCL header pin |
+>
+> Most boards also print `SDA`/`SCL` next to the header.
 
-| Arduino pin | IoT Relay terminal | Color in diagram |
-|-------------|--------------------|---------|
-| **Digital pin 8** | **+** (control input) | purple |
-| **GND** | **−** (control input) | black |
+## Arduino to the IoT Relay control input
 
-- The green control-input terminal block is on the side of the IoT Relay. Strip about 6 mm of wire, insert, and tighten.
-- **Polarity matters**: pin 8 goes to **+**, GND goes to **−**.
-- The control input is a low-voltage DC input (roughly 3–48 V DC; check the label on your unit), so an Arduino pin drives it directly with no extra transistor or resistor.
+| Arduino pin | IoT Relay terminal | Wire color in diagram |
+|-------------|--------------------|-----------------------|
+| **Digital pin 8** | **+** | purple |
+| **GND** | **−** | black |
 
-## Which outlet do the lights go in?
+- The green two-pin control terminal is on the side of the relay, marked **+ ∿ −**. Strip about 6 mm of each wire, insert it, and tighten the screw.
+- **Polarity matters.** Pin 8 goes to **+** and GND goes to **−**.
+- The control input accepts low-voltage DC (about 3–48 V DC; check the label on your unit), so an Arduino pin can drive it directly. You don't need a transistor or resistor.
 
-| Outlet | Pin 8 LOW | Pin 8 HIGH |
-|--------|-----------|-----------|
-| Always ON | on | on |
-| Normally ON | on | **off** |
-| **Normally OFF** (×2) | off | **on** |
+<p align="center">
+  <img src="photos/Relay_terminal_closeup.jpg" alt="IoT Relay control terminal with the + and − wires connected" width="300">
+  <br><em>Control terminal: <b>+</b> (left in this view) goes to pin 8, <b>−</b> goes to GND.</em>
+</p>
 
-**Plug the lights into a "Normally OFF" outlet.** Then `HIGH` in the schedule = lights on.
+## Outlet assignment and power
 
-## Powering the Arduino
+<p align="center">
+  <img src="photos/Full_lid_off.jpg" alt="IoT Relay with the USB power adapter in the Always ON outlet and the grow light in a Normally OFF outlet" width="420">
+</p>
 
-The Uno has **one** USB port, and you'll plug a laptop into it about once a year to sync the clock. Two options:
+The IoT Relay has four outlets:
 
-| Option | Pros | Cons |
-|--------|------|------|
-| **9 V DC adapter in the barrel jack** (recommended) | USB port stays free: plug the laptop in without unplugging power | Needs a 7–12 V center-positive adapter |
-| **5 V USB wall adapter** in the USB port | Uses any phone charger | You unplug it to connect the laptop, so the Arduino restarts (a ~2 s blip) |
+| Outlet | Pin 8 `LOW` | Pin 8 `HIGH` | Used for |
+|--------|-------------|--------------|----------|
+| **Always ON** | on | on | **USB power adapter for the Arduino** |
+| Normally ON | on | off | (not used) |
+| **Normally OFF** (×2) | off | on | **Grow light** |
 
-Either way, the Arduino may restart for about 1–2 seconds when the laptop connects ([why](03_sync_clock_from_laptop.md#will-syncing-blink-the-lights)). Plugging the adapter into the IoT Relay's **Always ON** outlet lets everything run from one wall socket.
+- **Grow light → Normally OFF outlet.** With this setup, `HIGH` in the schedule means lights on.
+- **Arduino power → Always ON outlet.** A 5 V USB adapter in the Always ON outlet powers the Arduino through its USB port. The whole system runs from one wall socket, and the Arduino keeps power whatever state the relay is in.
 
-## Final check on site
+### Syncing with a USB-powered Arduino
 
-- The Arduino's **L** LED gives a **short blink every 2 seconds** → running normally.
-- **Fast blinking** → clock not set or RTC problem. Run the [laptop sync](03_sync_clock_from_laptop.md).
-- The relay's own indicator light should match the schedule.
+The Uno has one USB port, and the laptop uses that port during a [clock sync](03_sync_clock_from_laptop.md). To sync, unplug the USB cable from the power adapter and plug it into the laptop. Plug it back into the adapter when the sync finishes.
+
+While the cable is unplugged, the Arduino has no power, so the relay switches off and the grow light goes off. When power returns, the Arduino restarts and restores the scheduled state within about two seconds. To avoid any interruption, sync during the lights-off period.
+
+> **Optional: keep the USB port free.** You can power the Uno from a 7–12 V center-positive adapter in its DC barrel jack instead, also plugged into the Always ON outlet. A laptop can then connect without removing power. The Uno may still restart for 1–2 seconds when the serial port opens ([details](03_sync_clock_from_laptop.md#does-syncing-interrupt-the-lights)).
+
+## Enclosure
+
+The reference build uses a 3D-printed mount that holds the relay with zip ties and encloses the Arduino. For the model and print notes, see [`enclosure/`](../enclosure/README.md).
+
+## Final check
+
+- The Arduino's **L** LED gives a **short blink every 2 seconds**: the timer is running normally.
+- The **L** LED is **fast-blinking**: the clock isn't set or the RTC has a problem. Run the [clock sync](03_sync_clock_from_laptop.md).
+- The relay's green **switch active** LED matches the schedule.
 
 ---
 
-**Next:** [3. Sync the clock from a laptop →](03_sync_clock_from_laptop.md)
+**Next:** [3. Clock sync →](03_sync_clock_from_laptop.md)

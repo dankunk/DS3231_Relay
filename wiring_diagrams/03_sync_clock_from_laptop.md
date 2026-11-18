@@ -1,54 +1,52 @@
-# 3. Sync the clock from a laptop
+# 3. Clock Sync
 
-Plug a laptop into the Arduino's USB port and run one script. It sets the DS3231 to the exact time, checks its health, and tracks the coin cell's age. No Wi-Fi on the Arduino, no extra boards, and nothing to unplug.
+`sync_rtc.py` sets the DS3231 over the Arduino's USB connection. In one run it sets the clock to within a few milliseconds of UTC, checks the RTC's health, and tracks the coin cell's age. The Arduino needs no network connection or extra hardware.
 
-[← Back to guides](README.md) · [← 2. Wiring](02_wiring.md)
+[← Guides](README.md) · [← 2. Wiring](02_wiring.md)
 
 ---
 
-## When to run it
+## When to sync
 
-- **First install** (the Arduino fast-blinks until the clock is set)
-- **About once a year** to correct drift (a DS3231 drifts at most ~1 minute per year)
-- **After replacing the coin cell**, or whenever the Arduino's L LED fast-blinks
+- **At first installation.** The Arduino fast-blinks until the clock is set.
+- **About once a year**, to correct drift. A DS3231 drifts by about one minute per year at most.
+- **After replacing the coin cell**, or whenever the **L** LED is fast-blinking.
 
-**Not** for daylight saving. That's automatic ([guide 4](04_daylight_saving_time.md)).
+You don't need to sync for daylight saving time, because the sketch handles it ([guide 4](04_daylight_saving_time.md)).
 
-## One-time laptop setup
+## Laptop setup (one time)
 
-1. Install **Python 3** from https://www.python.org/downloads/. On Windows, tick **"Add python.exe to PATH"** in the installer.
-2. Install the serial library. Open a terminal (Windows: *Start → "Terminal"* or *"Command Prompt"*) and run:
+1. Install **Python 3** from <https://www.python.org/downloads/>. On Windows, select **Add python.exe to PATH** during installation.
+2. Install the serial library:
 
    ```bash
    py -m pip install pyserial
    ```
 
-   (Mac/Linux: `python3 -m pip install pyserial`)
+   On macOS or Linux, run `python3 -m pip install pyserial`. On Windows, `sync_rtc.bat` installs it automatically the first time it runs.
 
-   On Windows, `sync_rtc.bat` also installs it for you the first time.
+3. Copy the [`laptop_sync/`](../laptop_sync) folder to the laptop, or clone the repository.
 
-3. Copy the [`laptop_sync/`](../laptop_sync) folder from this repo onto the laptop (or clone the whole repo).
+## Running a sync
 
-## Running it
-
-1. **Close the Arduino IDE's Serial Monitor** if it's open.
-2. Plug the laptop into the Arduino's USB port.
-3. Run the sync:
-   - **Windows:** double-click **`laptop_sync/sync_rtc.bat`**, or in a terminal:
+1. Close the Arduino IDE Serial Monitor if it's open.
+2. Connect the laptop to the Arduino's USB port. If the Arduino is powered over USB, unplug its cable from the power adapter and plug it into the laptop.
+3. Run the script:
+   - **Windows:** double-click `laptop_sync/sync_rtc.bat`, or run:
 
      ```bash
      py laptop_sync/sync_rtc.py
      ```
 
-   - **Mac/Linux:**
+   - **macOS / Linux:**
 
      ```bash
      python3 laptop_sync/sync_rtc.py
      ```
 
-4. It takes about 10 seconds. Read the report, then unplug the laptop.
+4. The sync takes about 10 seconds. Review the report, then plug the USB cable back into the power adapter.
 
-The script finds the Arduino's port automatically. If it can't (e.g. two Arduinos plugged in), add `--port COM3` (Windows) or `--port /dev/ttyACM0` (Mac/Linux). `--list-ports` shows what's connected.
+The script finds the Arduino's serial port automatically. If more than one candidate port is connected, pass `--port COM3` (Windows) or `--port /dev/ttyACM0` (macOS/Linux). To see the available ports, run the script with `--list-ports`.
 
 ### Example output
 
@@ -83,49 +81,54 @@ Done. The relay schedule is running. You can unplug the laptop.
 
 ### Options
 
-| Command | What it does |
-|---------|--------------|
-| `sync_rtc.py` | Check health, then set the clock |
-| `sync_rtc.py --check` | Only measure and report; changes nothing |
+| Command | Description |
+|---------|-------------|
+| `sync_rtc.py` | Check the RTC's health, then set the clock |
+| `sync_rtc.py --check` | Measure and report only; makes no changes |
 | `sync_rtc.py --battery-replaced` | Also record that the coin cell was replaced **today** |
-| `sync_rtc.py --battery-replaced 2026-05-01` | …or on a specific date |
+| `sync_rtc.py --battery-replaced 2026-05-01` | Record a specific replacement date |
 | `sync_rtc.py --no-ntp` | Use the laptop's clock instead of internet time |
-| `sync_rtc.py --verbose` | Also show the Arduino's log lines |
+| `sync_rtc.py --port COM3` | Use a specific serial port |
+| `sync_rtc.py --list-ports` | List the available serial ports |
+| `sync_rtc.py --verbose` | Also show the Arduino's log output |
 
-The first time it runs, the script asks when the coin cell was installed (press Enter to skip). That date is stored on the Arduino, so later syncs can tell you when it's due.
+On the first run, the script asks when the coin cell was installed (press Enter to skip). The date is stored on the Arduino, so later syncs can report when the cell is due for replacement.
 
-## Where the time comes from
+## Time source
 
-1. **Internet time (NTP)**, if the laptop can reach a time server. The script asks the servers directly, so it's accurate to a few milliseconds even if the laptop's own clock is off. Campus networks like eduroam usually allow this. The *microcontroller* couldn't join eduroam, but the laptop can.
-2. **The laptop's own clock**, if no time server answers. The script warns you. Windows keeps its clock roughly right automatically, but it can be off by a second or more. Click *Settings → Time & language → Date & time → Sync now* first if you're offline.
+1. **Internet time (NTP).** If the laptop can reach a time server, the script queries it directly. The result is accurate to a few milliseconds even if the laptop's own clock is wrong. Most home and institutional networks allow NTP.
+2. **The laptop's clock.** If no time server responds, the script uses the laptop's clock and prints a warning. The operating system keeps this roughly correct, but it can be off by a second or more. If you're offline, sync the system clock first (on Windows: **Settings → Time & language → Date & time → Sync now**).
 
-## Does the USB connection add delay?
+## How the USB delay is cancelled
 
-A little, a few milliseconds, and the script cancels it out:
+USB adds a few milliseconds of delay. The script measures that delay and cancels it out:
 
-1. **It measures the delay.** The script pings the Arduino 12 times and times the round trip (typically 2–20 ms).
-2. **It sends early.** It sends `SET <time>` ahead of time *without* the final newline. Then it sends that single newline byte early by the measured one-way delay, so it arrives right on the second.
-3. **The Arduino acts instantly.** The sketch checks for serial input constantly and writes the DS3231 the moment the newline arrives. Writing the seconds register also restarts the DS3231's sub-second counter, so the new second starts right then.
-4. **It measures the result.** The Arduino reports the exact moment its RTC's seconds roll over, and the script compares that with true time. That's the *"Measured RTC error after sync"* line.
+1. **It measures the delay.** The script pings the Arduino 12 times and times each round trip. A round trip typically takes 2–20 ms.
+2. **It sends the time early.** The script sends `SET <time>` without the final newline. It then sends the newline early by the measured one-way delay, so the newline arrives exactly on the second.
+3. **The Arduino sets the clock as soon as the newline arrives.** The sketch polls the serial port continuously and writes the DS3231 the moment the newline arrives. Writing the seconds register also resets the DS3231's sub-second counter.
+4. **It measures the result.** The Arduino reports the exact moment its RTC's seconds roll over, and the script compares that with the true time. The difference is shown as *Measured RTC error after sync*.
 
-Typical result: **within a few milliseconds**. The "worst case" figure is an upper bound for unusual USB adapters whose delay differs in each direction. Even that is hundreds of times smaller than one year of normal DS3231 drift, and far below anything that matters for a light schedule.
+The typical result is within a few milliseconds. The worst-case figure is an upper bound for USB adapters whose delay is different in each direction. Even the worst case is far smaller than a year of normal DS3231 drift.
 
-## Will syncing blink the lights?
+## Does syncing interrupt the lights?
 
-Possibly, for 1–2 seconds. On an Uno, opening the serial port normally **restarts the Arduino** (that's how the IDE uploads sketches). The script tries to prevent this, which works on some boards. During a restart the relay briefly drops to off, then the sketch immediately restores the correct state.
+Briefly, in some setups:
 
-To avoid any effect:
+- **USB-powered Arduino (reference build):** Moving the cable from the power adapter to the laptop removes power for a few seconds, so the relay switches off. When power returns, the Arduino restores the scheduled state.
+- **Barrel-jack-powered Arduino:** On an Uno, opening the serial port normally resets the board. The script tries to prevent this, but that works on only some boards. During a reset, the relay drops out for 1–2 seconds.
 
-- **Sync during the lights-off period** (simplest), or
-- Use a board that doesn't restart on connect (Uno R4, Leonardo, Micro), or
-- Advanced: a 10 µF capacitor between the Uno's **RESET** and **GND** pins disables the auto-restart. Remove it before uploading a new sketch.
+To avoid any interruption:
 
-> HID / metal-halide lamps need several minutes to restrike after any power interruption, so sync them during lights-off. LED fixtures don't care.
+- **Sync during the lights-off period.** This is the simplest option.
+- Use a board that doesn't reset when the serial port opens (Uno R4, Leonardo, Micro), with barrel-jack power.
+- *Advanced:* Fit a 10 µF capacitor between the Uno's **RESET** and **GND** pins to disable the auto-reset. Remove it before uploading a new sketch.
 
-## No laptop handy? Check from the Serial Monitor
+> HID and metal-halide lamps need several minutes to restrike after any power interruption, so always sync them during the lights-off period. LED fixtures aren't affected.
 
-Typing `STATUS` in the Arduino IDE's Serial Monitor (57600 baud, *New Line*) shows the time, DST, lost-power flag, last sync date and battery date. It can't set the clock accurately by hand; use the script for that.
+## Checking status without the script
+
+To view the time, DST state, lost-power flag, last sync date and battery date, type `STATUS` in the Arduino IDE Serial Monitor (57600 baud, **New Line**). The Serial Monitor can't set the clock accurately; use `sync_rtc.py` for that.
 
 ---
 
-**Next:** [4. Daylight saving time: how it works →](04_daylight_saving_time.md)
+**Next:** [4. Daylight saving time →](04_daylight_saving_time.md)
