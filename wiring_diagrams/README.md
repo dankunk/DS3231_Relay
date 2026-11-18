@@ -32,17 +32,7 @@ For photos of the reference build, see [photos/](photos/README.md).
 
 ## Bill of materials
 
-| Part | Notes |
-|------|-------|
-| Arduino Uno R3 (or compatible) | Nano, Mega and Uno R4 also work. See the [I²C pin notes](02_wiring.md#ds3231-to-arduino). |
-| Adafruit DS3231 Precision RTC (STEMMA QT) | Runs on 3–5 V and has no charging circuit. [Other DS3231 modules](05_battery_and_maintenance.md#using-a-different-ds3231-module) also work. |
-| CR1220 coin cell | Keeps the RTC running during power cuts |
-| STEMMA QT / Qwiic to male-header cable | Connects the RTC to the Arduino headers. Four jumper wires also work. |
-| Digital Loggers IoT Relay | Switches the grow light |
-| 2 jumper wires | Connect Arduino pin 8 and GND to the relay's control terminal |
-| 5 V USB power adapter and USB cable | Powers the Arduino from the relay's **Always ON** outlet |
-| Laptop with Python 3 | Used for clock syncs. Any OS works. |
-| 3D-printed mount (optional) | See [`enclosure/`](../enclosure/README.md) |
+For the full parts list with Digi-Key part numbers and prices, see [`BOM/`](../BOM/README.md).
 
 ## Pin reference
 

@@ -27,6 +27,8 @@ A standalone grow-light timer. An Arduino reads a DS3231 real-time clock (RTC) a
 | Grow light | Plugs into a **Normally OFF** outlet on the relay |
 | 3D-printed mount (optional) | Holds the relay and the Arduino together. See [`enclosure/`](enclosure/README.md). |
 
+For the full parts list with Digi-Key part numbers, see the [bill of materials](BOM/README.md).
+
 The relay's **Always ON** outlet powers the Arduino through the USB adapter. The grow light plugs into a **Normally OFF** outlet, so it turns on when Arduino pin 8 goes `HIGH`. The whole system runs from a single wall socket.
 
 <p align="center">
@@ -52,6 +54,7 @@ The full build and operation guide is in [`wiring_diagrams/`](wiring_diagrams/RE
 | [`laptop_sync/`](laptop_sync) | `sync_rtc.py` clock-sync script, a Windows launcher (`sync_rtc.bat`), and `requirements.txt` |
 | [`wiring_diagrams/`](wiring_diagrams/README.md) | Guides, wiring diagrams, and photos of the reference build |
 | [`enclosure/`](enclosure/README.md) | 3D-printable mount for the relay and the Arduino |
+| [`BOM/`](BOM/README.md) | Bill of materials with Digi-Key part numbers |
 
 ## Quick start
 
