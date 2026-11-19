@@ -89,7 +89,7 @@ While the cable is unplugged, the Arduino has no power, so the relay switches of
 
 ## Enclosure
 
-The reference build uses a 3D-printed mount that holds the relay with zip ties and encloses the Arduino. For the model and print notes, see [`enclosure/`](../enclosure/README.md).
+The reference build uses a 3D-printed mount that holds the relay with zip ties and encloses the Arduino. For the source models and assembly steps, see [`enclosure/`](../enclosure/README.md).
 
 ## Final check
 

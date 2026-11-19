@@ -53,7 +53,7 @@ The full build and operation guide is in [`wiring_diagrams/`](wiring_diagrams/RE
 | [`Arduino_sketches/ds3231_trigger_relay/`](Arduino_sketches/ds3231_trigger_relay) | Arduino sketch: the schedule, time-zone and DST handling, fail-safe, serial commands |
 | [`laptop_sync/`](laptop_sync) | `sync_rtc.py` clock-sync script, a Windows launcher (`sync_rtc.bat`), and `requirements.txt` |
 | [`wiring_diagrams/`](wiring_diagrams/README.md) | Guides, wiring diagrams, and photos of the reference build |
-| [`enclosure/`](enclosure/README.md) | 3D-printable mount for the relay and the Arduino |
+| [`enclosure/`](enclosure/README.md) | Source models and assembly steps for the 3D-printed mount |
 | [`BOM/`](BOM/README.md) | Bill of materials with Digi-Key part numbers |
 
 ## Quick start

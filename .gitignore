@@ -1,3 +1,7 @@
 # Python
 __pycache__/
 *.pyc
+
+# Enclosure STL: a remix of a model whose license doesn't allow redistribution.
+# See enclosure/README.md.
+enclosure/*.stl
